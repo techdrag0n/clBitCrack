@@ -2,8 +2,8 @@ Purpose:
 - Optimize for puzzles with public key known
 
 Plan: 
-- remove cuda
-- Update to visual studio 2022
+- remove cuda  -----DONE
+- Update to visual studio 2022 ------DONE
 - modify program to search public keys rather than addresses
 	this will reduce search time
 
