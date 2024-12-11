@@ -49,11 +49,12 @@ CLKeySearchDevice::CLKeySearchDevice(uint64_t device, int threads, int pointsPer
     try {
         // Create the context
         _clContext = new cl::CLContext(_device);
-        Logger::log(LogLevel::Info, "Compiling OpenCL kernels...");
+        Logger::log(LogLevel::Info, "Compiling OpenCL kernels 1...");
         _clProgram = new cl::CLProgram(*_clContext, _bitcrack_cl);
-
+        Logger::log(LogLevel::Info, "Compiling OpenCL kernels 2...");
         // Load the kernels
         _initKeysKernel = new cl::CLKernel(*_clProgram, "multiplyStepKernel");
+        Logger::log(LogLevel::Info, "Compiling OpenCL kernels 3...");
         _initKeysKernel->getWorkGroupSize();
 
         _stepKernel = new cl::CLKernel(*_clProgram, "keyFinderKernel");

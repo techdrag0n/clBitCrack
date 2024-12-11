@@ -66,14 +66,18 @@ bool isInBloomFilter(unsigned int hash[5], __global unsigned int *targetList, ul
     return foundMatch;
 }
 
-bool checkHash(unsigned int hash[5], __global unsigned int *targetList, size_t numTargets, ulong mask)
+
+
+bool checkHash(unsigned int hash[5], __global unsigned int* targetList, size_t numTargets, ulong mask)
 {
-    if(numTargets > 16) {
+    if (numTargets > 16) {
         return isInBloomFilter(hash, targetList, mask);
-    } else {
+    }
+    else {
         return isInList(hash, targetList, numTargets);
     }
 }
+
 
 
 void doRMD160FinalRound(const unsigned int hIn[5], unsigned int hOut[5])
@@ -248,25 +252,16 @@ void doIteration(
 
         x = xPtr[i];
 
-        if((compression == UNCOMPRESSED) || (compression == BOTH)) {
-            uint256_t y = yPtr[i];
-
-            hashPublicKey(x, y, digest);
-
-            if(checkHash(digest, targetList, numTargets, mask)) {
-                setResultFound(i, false, x, y, digest, results, numResults);
-            }
-        }
-
-        if((compression == COMPRESSED) || (compression == BOTH)) {
-
             hashPublicKeyCompressed(x, readLSW256k(yPtr, i), digest);
+
+
+
+
 
             if(checkHash(digest, targetList, numTargets, mask)) {
                 uint256_t y = yPtr[i];
                 setResultFound(i, true, x, y, digest, results, numResults);
             }
-        }
 
         beginBatchAdd256k(incX, x, chain, i, batchIdx, &inverse);
         batchIdx++;
@@ -321,19 +316,6 @@ void doIterationWithDouble(
 
         x = xPtr[i];
 
-        // uncompressed
-        if((compression == UNCOMPRESSED) || (compression == BOTH)) {
-            uint256_t y = yPtr[i];
-            hashPublicKey(x, y, digest);
-
-            if(checkHash(digest, targetList, numTargets, mask)) {
-                setResultFound(i, false, x, y, digest, results, numResults);
-            }
-        }
-
-        // compressed
-        if((compression == COMPRESSED) || (compression == BOTH)) {
-
             hashPublicKeyCompressed(x, readLSW256k(yPtr, i), digest);
 
             if(checkHash(digest, targetList, numTargets, mask)) {
@@ -341,7 +323,7 @@ void doIterationWithDouble(
                 uint256_t y = yPtr[i];
                 setResultFound(i, true, x, y, digest, results, numResults);
             }
-        }
+ //       }
 
         beginBatchAddWithDouble256k(incX, incY, xPtr, chain, i, batchIdx, &inverse);
         batchIdx++;
