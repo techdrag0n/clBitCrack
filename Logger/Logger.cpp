@@ -38,6 +38,7 @@ std::string Logger::getDateTimeString()
 	struct tm  tstruct;
 	char       buf[80];
 	tstruct = *localtime(&now);
+//	localtime_s(&tstruct, &now); // new way of doing it
 
 	strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
 
