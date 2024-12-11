@@ -12,10 +12,6 @@
 
 #include "DeviceManager.h"
 
-#ifdef BUILD_CUDA
-#include "CudaKeySearchDevice.h"
-#endif
-
 #ifdef BUILD_OPENCL
 #include "CLKeySearchDevice.h"
 #endif
@@ -239,11 +235,6 @@ DeviceParameters getDefaultParameters(const DeviceManager::DeviceInfo &device)
 
 static KeySearchDevice *getDeviceContext(DeviceManager::DeviceInfo &device, int blocks, int threads, int pointsPerThread)
 {
-#ifdef BUILD_CUDA
-    if(device.type == DeviceManager::DeviceType::CUDA) {
-        return new CudaKeySearchDevice((int)device.physicalId, threads, pointsPerThread, blocks);
-    }
-#endif
 
 #ifdef BUILD_OPENCL
     if(device.type == DeviceManager::DeviceType::OpenCL) {
@@ -278,33 +269,8 @@ int parseCompressionString(const std::string &s)
 {
     std::string comp = util::toLower(s);
 
-    if(comp == "both") {
-        return PointCompressionType::BOTH;
-    }
-
-    if(comp == "compressed") {
         return PointCompressionType::COMPRESSED;
-    }
-
-    if(comp == "uncompressed") {
-        return PointCompressionType::UNCOMPRESSED;
-    }
-
-    throw std::string("Invalid compression format: '" + s + "'");
-}
-
-static std::string getCompressionString(int mode)
-{
-    switch(mode) {
-    case PointCompressionType::BOTH:
-        return "both";
-    case PointCompressionType::UNCOMPRESSED:
-        return "uncompressed";
-    case PointCompressionType::COMPRESSED:
-        return "compressed";
-    }
-
-    throw std::string("Invalid compression setting '" + util::format(mode) + "'");
+    
 }
 
 void writeCheckpoint(secp256k1::uint256 nextKey)
@@ -317,7 +283,7 @@ void writeCheckpoint(secp256k1::uint256 nextKey)
     tmp << "blocks=" << _config.blocks << std::endl;
     tmp << "threads=" << _config.threads << std::endl;
     tmp << "points=" << _config.pointsPerThread << std::endl;
-    tmp << "compression=" << getCompressionString(_config.compression) << std::endl;
+    tmp << "compression=compressed" << std::endl;
     tmp << "device=" << _config.device << std::endl;
     tmp << "elapsed=" << (_config.elapsed + util::getSystemTime() - _startTime) << std::endl;
     tmp << "stride=" << _config.stride.toString();
@@ -373,7 +339,7 @@ int run()
         return 1;
     }
 
-    Logger::log(LogLevel::Info, "Compression: " + getCompressionString(_config.compression));
+    Logger::log(LogLevel::Info, "Compression: compressed");
     Logger::log(LogLevel::Info, "Starting at: " + _config.nextKey.toString());
     Logger::log(LogLevel::Info, "Ending at:   " + _config.endKey.toString());
     Logger::log(LogLevel::Info, "Counting by: " + _config.stride.toString());
@@ -664,13 +630,9 @@ int main(int argc, char **argv)
     }
 
 	// Check option for compressed, uncompressed, or both
-	if(optCompressed && optUncompressed) {
-		_config.compression = PointCompressionType::BOTH;
-	} else if(optCompressed) {
+
 		_config.compression = PointCompressionType::COMPRESSED;
-	} else if(optUncompressed) {
-		_config.compression = PointCompressionType::UNCOMPRESSED;
-	}
+	
 
     if(_config.checkpointFile.length() > 0) {
         readCheckpointFile();
