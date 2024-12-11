@@ -1,7 +1,12 @@
-Plan
+Purpose
+Optimize for puzzles with public key known
+
+Plan 
+- remove cuda
+- Update to visual studio 2022
 - modify program to search public keys rather than addresses
 	this will reduce search time
-- remove cuda 
+
 - make opencl version work on Nvidia cards
 - add a couple other features
   	ability to start at offsets from public key
