@@ -4,15 +4,20 @@ Purpose:
 Plan: 
 - remove cuda  -----DONE
 - Update to visual studio 2022 ------DONE
-- modify program to search public keys rather than addresses
-	this will reduce search time
+-	 modify program to search public keys rather than addresses  
+		ability to search "vanity public keys"
+		ability to start at offsets from public key
 
-- make opencl version work on Nvidia cards
-- add a couple other features
-  	ability to start at offsets from public key
-  	ability to search "vanity public keys"
+			this will reduce search time and allow for babystep/ giantstep modes
+
+- make opencl version work on Nvidia cards ------DONE
 
 
+
+	found a bug in current code.... size of rand is "size" / (256*32) ???
+	
+	
+	
 
 
 # BitCrack
