@@ -3,7 +3,7 @@
 #include <sstream>
 #include <cstring>
 #include <algorithm>
-
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include "clContext.h"
 #include "util.h"
 

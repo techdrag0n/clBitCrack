@@ -1,13 +1,9 @@
 #ifndef _CL_UTIL_H
 #define _CL_UTIL_H
 
-#ifdef __APPLE__
-#define CL_SILENCE_DEPRECATION
-#include <OpenCL/opencl.h>
-#else
+#define CL_HPP_TARGET_OPENCL_VERSION 120
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
-#endif
-
 #include <string>
 #include <vector>
 

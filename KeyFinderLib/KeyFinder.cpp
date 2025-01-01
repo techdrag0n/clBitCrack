@@ -1,10 +1,8 @@
 #include <fstream>
 #include <iostream>
-
 #include "KeyFinder.h"
 #include "util.h"
 #include "AddressUtil.h"
-
 #include "Logger.h"
 
 
@@ -21,7 +19,7 @@ void KeyFinder::defaultStatusCallback(KeySearchStatus status)
 KeyFinder::KeyFinder(const secp256k1::uint256 &startKey, const secp256k1::uint256 &endKey, int compression, KeySearchDevice* device, const secp256k1::uint256 &stride)
 {
 	_total = 0;
-	_statusInterval = 1000;
+	_statusInterval = 3000;
 	_device = device;
 
 	_compression = compression;
@@ -226,14 +224,14 @@ void KeyFinder::run()
                 info.privateKey = results[i].privateKey;
                 info.publicKey = results[i].publicKey;
 				info.compressed = results[i].compressed;
-				info.address = Address::fromPublicKey(results[i].publicKey, results[i].compressed);
+//				info.address = Address::fromPublicKey(results[i].publicKey, results[i].compressed);
 
 				_resultCallback(info);
 			}
 
 			// Remove the hashes that were found
 			for(unsigned int i = 0; i < results.size(); i++) {
-				removeTargetFromList(results[i].hash);
+//				removeTargetFromList(results[i].hash);
 			}
 		}
 

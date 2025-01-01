@@ -115,13 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CustomBuild Include="ripemd160.cl">
-      <FileType>Document</FileType>
-    </CustomBuild>
     <CustomBuild Include="secp256k1.cl">
-      <FileType>Document</FileType>
-    </CustomBuild>
-    <CustomBuild Include="sha256.cl">
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>

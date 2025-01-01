@@ -11,24 +11,9 @@ typedef struct {
     bool compressed;
     unsigned int x[8];
     unsigned int y[8];
-    unsigned int digest[5];
+    unsigned int digest[8];
 }CLDeviceResult;
 
-
-static void undoRMD160FinalRound(const unsigned int hIn[5], unsigned int hOut[5])
-{
-    unsigned int iv[5] = {
-        0x67452301,
-        0xefcdab89,
-        0x98badcfe,
-        0x10325476,
-        0xc3d2e1f0
-    };
-
-    for(int i = 0; i < 5; i++) {
-        hOut[i] = util::endian(hIn[i]) - iv[(i + 1) % 5];
-    }
-}
 
 CLKeySearchDevice::CLKeySearchDevice(uint64_t device, int threads, int pointsPerThread, int blocks)
 {
@@ -85,61 +70,6 @@ CLKeySearchDevice::~CLKeySearchDevice()
     delete _stepKernelWithDouble;
     delete _initKeysKernel;
     delete _clContext;
-}
-
-uint64_t CLKeySearchDevice::getOptimalBloomFilterMask(double p, size_t n)
-{
-    double m = 3.6 * ceil((n * std::log(p)) / std::log(1 / std::pow(2, std::log(2))));
-
-    unsigned int bits = (unsigned int)std::ceil(std::log(m) / std::log(2));
-
-    return ((uint64_t)1 << bits) - 1;
-}
-
-void CLKeySearchDevice::initializeBloomFilter(const std::vector<struct hash160> &targets, uint64_t mask)
-{
-    size_t sizeInWords = (mask + 1) / 32;
-
-    uint32_t *buf = new uint32_t[sizeInWords];
-
-    for(size_t i = 0; i < sizeInWords; i++) {
-        buf[i] = 0;
-    }
-
-    for(unsigned int k = 0; k < targets.size(); k++) {
-
-        unsigned int hash[5];
-        unsigned int h5 = 0;
-
-        uint64_t idx[5];
-
-        undoRMD160FinalRound(targets[k].h, hash);
-
-        for(int i = 0; i < 5; i++) {
-            h5 += hash[i];
-        }
-
-        idx[0] = ((hash[0] << 6) | (h5 & 0x3f)) & mask;
-        idx[1] = ((hash[1] << 6) | ((h5 >> 6) & 0x3f)) & mask;
-        idx[2] = ((hash[2] << 6) | ((h5 >> 12) & 0x3f)) & mask;
-        idx[3] = ((hash[3] << 6) | ((h5 >> 18) & 0x3f)) & mask;
-        idx[4] = ((hash[4] << 6) | ((h5 >> 24) & 0x3f)) & mask;
-
-        for(int i = 0; i < 5; i++) {
-            uint64_t j = idx[i];
-            buf[j / 32] |= 1 << (j % 32);
-        }
-    }
-
-
-    _targetMemSize = sizeInWords * sizeof(uint32_t);
-
-    _deviceTargetList.mask = mask;
-    _deviceTargetList.ptr = _clContext->malloc(sizeInWords * sizeof(uint32_t));
-    _deviceTargetList.size = targets.size();
-    _clContext->copyHostToDevice(buf, _deviceTargetList.ptr, sizeInWords * sizeof(uint32_t));
-
-    delete[] buf;
 }
 
 void CLKeySearchDevice::allocateBuffers()
@@ -269,21 +199,12 @@ void CLKeySearchDevice::setTargetsList()
     for(size_t i = 0; i < count; i++) {
         unsigned int h[5];
 
-        undoRMD160FinalRound(_targetList[i].h, h);
-
         _clContext->copyHostToDevice(h, _targets, i * 5 * sizeof(unsigned int), 5 * sizeof(unsigned int));
     }
 
     _targetMemSize = count * 5 * sizeof(unsigned int);
     _deviceTargetList.ptr = _targets;
     _deviceTargetList.size = count;
-}
-
-void CLKeySearchDevice::setBloomFilter()
-{
-    uint64_t bloomFilterMask = getOptimalBloomFilterMask(1.0e-9, _targetList.size());
-
-    initializeBloomFilter(_targetList, bloomFilterMask);
 }
 
 void CLKeySearchDevice::setTargetsInternal()
@@ -293,11 +214,7 @@ void CLKeySearchDevice::setTargetsInternal()
         _clContext->free(_deviceTargetList.ptr);
     }
 
-    if(_targetList.size() < 16) {
         setTargetsList();
-    } else {
-        setBloomFilter();
-    }
 }
 
 void CLKeySearchDevice::setTargets(const std::set<KeySearchTarget> &targets)
@@ -353,34 +270,6 @@ void CLKeySearchDevice::splatBigInt(unsigned int *ptr, int idx, secp256k1::uint2
 
 }
 
-bool CLKeySearchDevice::isTargetInList(const unsigned int hash[5])
-{
-    size_t count = _targetList.size();
-
-    while(count) {
-        if(memcmp(hash, _targetList[count - 1].h, 20) == 0) {
-            return true;
-        }
-        count--;
-    }
-
-    return false;
-}
-
-void CLKeySearchDevice::removeTargetFromList(const unsigned int hash[5])
-{
-    size_t count = _targetList.size();
-
-    while(count) {
-        if(memcmp(hash, _targetList[count - 1].h, 20) == 0) {
-            _targetList.erase(_targetList.begin() + count - 1);
-            return;
-        }
-        count--;
-    }
-}
-
-
 void CLKeySearchDevice::getResultsInternal()
 {
     unsigned int numResults = 0;
@@ -396,10 +285,6 @@ void CLKeySearchDevice::getResultsInternal()
 
         for(unsigned int i = 0; i < numResults; i++) {
 
-            // might be false-positive
-            if(!isTargetInList(ptr[i].digest)) {
-                continue;
-            }
             actualCount++;
 
             KeySearchResult minerResult;
@@ -415,7 +300,7 @@ void CLKeySearchDevice::getResultsInternal()
 
             minerResult.publicKey = secp256k1::ecpoint(secp256k1::uint256(ptr[i].x, secp256k1::uint256::BigEndian), secp256k1::uint256(ptr[i].y, secp256k1::uint256::BigEndian));
 
-            removeTargetFromList(ptr[i].digest);
+//            removeTargetFromList(ptr[i].digest);
 
             _results.push_back(minerResult);
         }
@@ -425,51 +310,6 @@ void CLKeySearchDevice::getResultsInternal()
         _clContext->copyHostToDevice(&numResults, _deviceResultsCount, sizeof(unsigned int));
     }
 }
-
-void CLKeySearchDevice::selfTest()
-{
-    uint64_t numPoints = (uint64_t)_points;
-    std::vector<secp256k1::uint256> privateKeys;
-
-    // Generate key pairs for k, k+1, k+2 ... k + <total points in parallel - 1>
-    secp256k1::uint256 privKey = _start;
-
-    privateKeys.push_back(_start);
-
-    for(uint64_t i = 1; i < numPoints; i++) {
-        privKey = privKey.add(_stride);
-        privateKeys.push_back(privKey);
-    }
-
-    unsigned int *xBuf = new unsigned int[numPoints * 8];
-    unsigned int *yBuf = new unsigned int[numPoints * 8];
-
-    _clContext->copyDeviceToHost(_x, xBuf, sizeof(unsigned int) * 8 * numPoints);
-    _clContext->copyDeviceToHost(_y, yBuf, sizeof(unsigned int) * 8 * numPoints);
-
-    for(int index = 0; index < _points; index++) {
-        secp256k1::uint256 privateKey = privateKeys[index];
-
-        secp256k1::uint256 x = readBigInt(xBuf, index);
-        secp256k1::uint256 y = readBigInt(yBuf, index);
-
-        secp256k1::ecpoint p1(x, y);
-        secp256k1::ecpoint p2 = secp256k1::multiplyPoint(privateKey, secp256k1::G());
-
-        if(!secp256k1::pointExists(p1)) {
-            throw std::string("Validation failed: invalid point");
-        }
-
-        if(!secp256k1::pointExists(p2)) {
-            throw std::string("Validation failed: invalid point");
-        }
-
-        if(!(p1 == p2)) {
-            throw std::string("Validation failed: points do not match");
-        }
-    }
-}
-
 
 
 secp256k1::uint256 CLKeySearchDevice::readBigInt(unsigned int *src, int idx)
@@ -526,7 +366,7 @@ void CLKeySearchDevice::initializeBasePoints()
 
 void CLKeySearchDevice::generateStartingPoints()
 {
-    uint64_t totalPoints = (uint64_t)_points;
+    uint64_t totalPoints = (uint64_t)_points; //  total points from pointsPerThread * threads * blocks;
     uint64_t totalMemory = totalPoints * 40;
 
     std::vector<secp256k1::uint256> exponents;
@@ -543,7 +383,7 @@ void CLKeySearchDevice::generateStartingPoints()
     exponents.push_back(privKey);
 
     for(uint64_t i = 1; i < totalPoints; i++) {
-        privKey = privKey.add(_stride);
+        privKey = privKey.add(_stride);  // creating starting points
         exponents.push_back(privKey);
     }
 

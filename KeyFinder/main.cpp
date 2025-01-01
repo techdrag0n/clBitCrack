@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
-
 #include "KeyFinder.h"
 #include "AddressUtil.h"
 #include "util.h"
@@ -9,7 +8,6 @@
 #include "CmdParse.h"
 #include "Logger.h"
 #include "ConfigFile.h"
-
 #include "DeviceManager.h"
 
 #ifdef BUILD_OPENCL
@@ -27,7 +25,7 @@ typedef struct {
     // The last key to be checked
     secp256k1::uint256 endKey = secp256k1::N - 1;
 
-    uint64_t statusInterval = 1800;
+    uint64_t statusInterval = 3600;
     uint64_t checkpointInterval = 60000;
 
     unsigned int threads = 0;
@@ -63,45 +61,32 @@ static uint64_t _lastUpdate = 0;
 static uint64_t _runningTime = 0;
 static uint64_t _startTime = 0;
 
-/**
-* Callback to display the private key
-*/
+//
+// Callback to display the private key
+//
 void resultCallback(KeySearchResult info)
 {
 	if(_config.resultsFile.length() != 0) {
-		Logger::log(LogLevel::Info, "Found key for address '" + info.address + "'. Written to '" + _config.resultsFile + "'");
 
-		std::string s = info.address + " " + info.privateKey.toString(16) + " " + info.publicKey.toString(info.compressed);
+		Logger::log(LogLevel::Info, "'" + info.privateKey.toString(16) + "' '" + info.publicKey.toString(info.compressed) + "'.Written to '" + _config.resultsFile + "'");
+		std::string s = info.privateKey.toString(16) + " " + info.publicKey.x.toString(16);
 		util::appendToFile(_config.resultsFile, s);
 
 		return;
 	}
 
-	std::string logStr = "Address:     " + info.address + "\n";
-	logStr += "Private key: " + info.privateKey.toString(16) + "\n";
-	logStr += "Compressed:  ";
+	std::string logStr = "\nPrivate key: " + info.privateKey.toString(16) + "\n";
 
-	if(info.compressed) {
-		logStr += "yes\n";
-	} else {
-		logStr += "no\n";
-	}
+	logStr += "Public key: ";
 
-	logStr += "Public key:  \n";
-
-	if(info.compressed) {
-		logStr += info.publicKey.toString(true) + "\n";
-	} else {
-		logStr += info.publicKey.x.toString(16) + "\n";
-		logStr += info.publicKey.y.toString(16) + "\n";
-	}
+	logStr += info.publicKey.x.toString(16) + "\n";
 
 	Logger::log(LogLevel::Info, logStr);
 }
 
-/**
-Callback to display progress
-*/
+//
+//Callback to display progress
+//
 void statusCallback(KeySearchStatus info)
 {
 	std::string speedStr;
@@ -137,14 +122,6 @@ void statusCallback(KeySearchStatus info)
 
 	printf(formatStr, devName.c_str(), usedMemStr.c_str(), totalMemStr.c_str(), targetStr.c_str(), speedStr.c_str(), totalStr.c_str(), timeStr.c_str());
 
-    if(_config.checkpointFile.length() > 0) {
-        uint64_t t = util::getSystemTime();
-        if(t - _lastUpdate >= _config.checkpointInterval) {
-            Logger::log(LogLevel::Info, "Checkpoint");
-            writeCheckpoint(info.nextKey);
-            _lastUpdate = t;
-        }
-    }
 }
 
 /**
@@ -600,10 +577,19 @@ int main(int argc, char **argv)
 		}
 	} else {
 		for(unsigned int i = 0; i < ops.size(); i++) {
-            if(!Address::verifyAddress(ops[i])) {
-                Logger::log(LogLevel::Error, "Invalid address '" + ops[i] + "'");
-                return 1;
+          std::string myaddress = ops[i];
+          int mylength = myaddress.length();
+          if (myaddress.length() == 128)
+            {
+                // process public key
             }
+            else{
+             printf("len: %d\n", mylength);
+                if (!Address::verifyAddress(ops[i])) {
+                    Logger::log(LogLevel::Error, "Invalid address '" + ops[i] + "'");
+                    return 1;
+                }
+        }
 			_config.targets.push_back(ops[i]);
 		}
 	}

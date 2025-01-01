@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-d 1 --keyspace 80000000000000000000000000000000000:fffffffffffffffffffffffffffffffffff 1NRRhrGSdfoP839poX3K9mA1ioi9nXdYNu 18yLNN6Fznhy2dmoT6Sz5GKfRAWUejXQur</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-d 1 --keyspace 1:fffffffffff ffffca9232429f94061c29550445d29bbe032f8677a6ab17ea8b518e01342d086efe6c90225701f15fc2aaec09b577ca837b5a022fa81b27b90cf33675382639</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

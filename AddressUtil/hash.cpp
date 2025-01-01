@@ -12,10 +12,13 @@ static unsigned int endian(unsigned int x)
 bool Address::verifyAddress(std::string address)
 {
 	// Check length
+	if (address.length() == 128) {
+
+	}else{
 	if(address.length() > 34) {
 		false;
 	}
-
+}
 	// Check encoding
 	if(!Base58::isBase58(address)) {
 		return false;
@@ -24,8 +27,8 @@ bool Address::verifyAddress(std::string address)
 	std::string noPrefix = address.substr(1);
 
 	secp256k1::uint256 value = Base58::toBigInt(noPrefix);
-	unsigned int words[6];
-	unsigned int hash[5];
+	unsigned int words[8];
+	unsigned int hash[8];
 	unsigned int checksum;
 
 	value.exportWords(words, 6, secp256k1::uint256::BigEndian);
@@ -35,30 +38,30 @@ bool Address::verifyAddress(std::string address)
 	return crypto::checksum(hash) == checksum;
 }
 
-std::string Address::fromPublicKey(const secp256k1::ecpoint &p, bool compressed)
-{
-	unsigned int xWords[8] = { 0 };
-	unsigned int yWords[8] = { 0 };
-
-	p.x.exportWords(xWords, 8, secp256k1::uint256::BigEndian);
-	p.y.exportWords(yWords, 8, secp256k1::uint256::BigEndian);
-
-	unsigned int digest[5];
-
-		Hash::hashPublicKeyCompressed(xWords, yWords, digest);
-
-	unsigned int checksum = crypto::checksum(digest);
-
-	unsigned int addressWords[8] = { 0 };
-	for(int i = 0; i < 5; i++) {
-		addressWords[2 + i] = digest[i];
-	}
-	addressWords[7] = checksum;
-
-	secp256k1::uint256 addressBigInt(addressWords, secp256k1::uint256::BigEndian);
-
-	return "1" + Base58::toBase58(addressBigInt);
-}
+//std::string Address::fromPublicKey(const secp256k1::ecpoint &p, bool compressed)
+//{
+//	unsigned int xWords[8] = { 0 };
+//	unsigned int yWords[8] = { 0 };
+//
+//	p.x.exportWords(xWords, 8, secp256k1::uint256::BigEndian);
+//	p.y.exportWords(yWords, 8, secp256k1::uint256::BigEndian);
+//
+//	unsigned int digest[5];
+//
+//		Hash::hashPublicKeyCompressed(xWords, yWords, digest);
+//
+//	unsigned int checksum = crypto::checksum(digest);
+//
+//	unsigned int addressWords[8] = { 0 };
+//	for(int i = 0; i < 5; i++) {
+//		addressWords[2 + i] = digest[i];
+//	}
+//	addressWords[7] = checksum;
+//
+//	secp256k1::uint256 addressBigInt(addressWords, secp256k1::uint256::BigEndian);
+//
+//	return "1" + Base58::toBase58(addressBigInt);
+//}
 
 void Hash::hashPublicKeyCompressed(const secp256k1::ecpoint &p, unsigned int *digest)
 {
@@ -68,7 +71,7 @@ void Hash::hashPublicKeyCompressed(const secp256k1::ecpoint &p, unsigned int *di
 	p.x.exportWords(xWords, 8, secp256k1::uint256::BigEndian);
 	p.y.exportWords(yWords, 8, secp256k1::uint256::BigEndian);
 
-	hashPublicKeyCompressed(xWords, yWords, digest);
+//	hashPublicKeyCompressed(xWords, yWords, digest);
 }
 
 void Hash::hashPublicKeyCompressed(const unsigned int *x, const unsigned int *y, unsigned int *digest)

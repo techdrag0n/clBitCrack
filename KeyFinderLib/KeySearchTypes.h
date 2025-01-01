@@ -7,9 +7,9 @@
 
 namespace PointCompressionType {
     enum Value {
-        COMPRESSED = 0,
-        UNCOMPRESSED = 1,
-        BOTH = 2
+        COMPRESSED = 0
+//        UNCOMPRESSED = 1,
+//        BOTH = 2
     };
 }
 
